@@ -44,11 +44,7 @@ class nn():
 
     # Random weights initializer.
     def initweights(self,layer1,layer2):
-        return([[np.random.normal() for i in range(layer1)] for j in range(layer2)])
-    
-    # Forward pass. Mapping relu to weights*inputs vector. Weights is a matrix, inputs a column vector.
-    def forward(self,inputs,weights):
-        return(list(map(lambda x: relu(x),weights*inputs)))
+        return(np.matrix([[np.random.normal() for i in range(layer1)] for j in range(layer2)]))
     
     # Backpropagation. As above.
     def back(self,inputs,weights):
@@ -61,12 +57,50 @@ class nn():
     # Cost function. Takes in arrays of labels and corresponding output values.
     def cost(self,right,wrong):
         return(np.sum((-right * np.log(wrong)) - ((1-right) * np.log(1-wrong))))
-        
-    # Converting row vector to column form.
-    def tocol(self, x):
-        return([[i] for i in self.x])
     
-    # Generating random weights.
-    weights = [initweights(data,range(nnodes)),initweights(range(nnodes),range(nnodes)) for i in range(nlayers-1),
-              initweights(range(nnodes),len(set(target)))]
+    #Adds +1 bias to layer.
+    def bias(self,layer):
+        return(np.append(layer,np.ones(len(layer))))
+#        return(np.append([layer],[np.ones(len(layer))],axis=0))
+    
+    # Forward step. Mapping relu to weights*inputs vector. Weights is a matrix, inputs a column vector.
+    # NEEDS BIAS.
+    def output(self,inputs,weights):
+        if self.act == "elu":
+            return(list(map(lambda x: elu(x) if x != 1 else x, weights*inputs)))
+        elif self.act == "relu":
+            return(list(map(lambda x: relu(x) if x != 1 else x, weights*inputs)))
+        elif self.act == "sigmoid":
+            return(list(map(lambda x: sigmoid(x) if x != 1 else x, weights*inputs)))
 
+    # Forward pass.
+    def forward(self,datapoint):
+        return(reduce(lambda x,y: output(x,y), [datapoint,*weights]))
+
+    # Calculates outputs. Decided to forego 
+    def outs(self,datapoint):
+        out = [output(datapoint,weights[0])]
+        for i in range(1,self.layers):
+            out.append(output(out[-1],weights[i]))
+        return(out)
+
+    def outs(self,datapoint)
+        return([output(datapoint,weights[0]),
+                list(map(lambda x,y: output(x,y), 
+                         [output(datapoint,weights[0]),*weights[1:]]))])
+    
+            
+        return([output(self.data[0],self.weights[0]),
+                *list(map(lambda x: output(self.data[x],self.weights[x]), range(1,self.layers)))])
+
+    # Converting input to column vector form.
+    coldata = [[i] for i in self.data]
+    
+    # Generating random weights. The "*2" is to account for bias nodes.
+    weights = [initweights(data.T,range(nnodes)),
+               initweights(range(nnodes*2),range(nnodes)) for i in range(nlayers-1),
+               initweights(range(nnodes),len(set(target)))]
+    
+    for i in range(self.cycles):
+        for j in range(self.nodes):
+            
